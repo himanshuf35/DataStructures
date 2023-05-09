@@ -7,6 +7,8 @@ template <typename T> struct TreeNode {
     T value;
     TreeNode<T>* left;
     TreeNode<T>* right;
+    TreeNode<T>* parent;
+    bool isLeft;
     TreeNode(T newData);
 };
 
@@ -14,6 +16,8 @@ template <typename T> TreeNode<T>::TreeNode(T newData) {
     value = newData;
     left = nullptr;
     right = nullptr;
+    parent = nullptr;
+    isLeft = false;
 }
 
 template <typename T> class BST {
@@ -23,19 +27,23 @@ template <typename T> class BST {
         void insertWithNode(TreeNode<T>* node, TreeNode<T>* newNode);
         void addRight(TreeNode<T>* node, TreeNode<T>* newNode);
         void addLeft(TreeNode<T>* node, TreeNode<T>* newNode);
-        TreeNode<T>* searchWithNode(TreeNode<T>* node, T searchValue);
         void preOrder(TreeNode<T>* node);
         void inOrder(TreeNode<T>* node);
         void postOrder(TreeNode<T>* node);
-        void removeWithNode(T value);
+        void deleteNode(TreeNode<T>* node, TreeNode<T>* replacementNode);
+        TreeNode<T>* searchWithNode(TreeNode<T>* node, T searchValue);
+        TreeNode<T>* getLargestNode(TreeNode<T>* node);
+        TreeNode<T>* getSmallestNode(TreeNode<T>* node);
     public: 
         BST();
         void insert(T newData);
-        TreeNode<T>* search(T searchValue);
         void printPreOrder();
         void printInOrder();
         void printPostOrder();
         void remove(T value);
+        TreeNode<T>* getLargest();
+        TreeNode<T>* getSmallest();
+        TreeNode<T>* search(T searchValue);
 };
 
 template <typename T> BST<T>::BST() {
@@ -66,10 +74,14 @@ template <typename T> void BST<T>::insertWithNode(TreeNode<T> * node, TreeNode<T
 
 template <typename T> void BST<T>::addRight(TreeNode<T>* node, TreeNode<T>* newNode) {
     node -> right = newNode;
+    newNode -> parent = node;
+    newNode -> isLeft = false;
 }
 
 template <typename T> void BST<T>::addLeft(TreeNode<T>* node, TreeNode<T>* newNode) {
     node -> left = newNode;
+    newNode -> parent = node;
+    newNode -> isLeft = true;
 }
 
 template <typename T> TreeNode<T>* BST<T>::searchWithNode(TreeNode<T>* node, T searchValue) {
@@ -111,6 +123,37 @@ template <typename T> void BST<T>::postOrder(TreeNode<T>* node) {
     }
 }
 
+template <typename T> TreeNode<T>* BST<T>::getLargestNode(TreeNode<T>* node) {
+    if(node -> right == nullptr) {
+        return node;
+    }
+    else return getLargestNode(node -> right);
+}
+
+template <typename T> TreeNode<T>* BST<T>::getSmallestNode(TreeNode<T>* node) {
+    if(node -> left == nullptr) {
+        return node;
+    }
+    else return getSmallestNode(node -> left);
+}
+
+template <typename T> void BST<T>::deleteNode(TreeNode<T>* node, TreeNode<T>* replacementNode) {
+    TreeNode<T>* parentNode = node -> parent;
+    if(parentNode == nullptr) {
+        root = nullptr;
+    }
+    else {
+        if(node -> isLeft) parentNode -> left = replacementNode;
+        else parentNode -> right = replacementNode;
+        if(replacementNode != nullptr) {
+            replacementNode -> isLeft = node -> isLeft;
+            replacementNode -> parent = parentNode;
+        }
+    }
+    delete node;
+}
+
+
 
 //public methods
 template <typename T> void BST<T>::insert(T newData) {
@@ -142,6 +185,35 @@ template <typename T> void BST<T>::printPostOrder() {
     cout << "\n";
 }
 
+template <typename T> void BST<T>::remove(T value) {
+    TreeNode<T>* searchedNode = searchWithNode(root, value);
+    if(searchedNode != nullptr) {
+        if(searchedNode -> left == nullptr && searchedNode -> right == nullptr) {
+            deleteNode(searchedNode, nullptr);
+        }
+        else if(searchedNode -> right == nullptr) {
+            deleteNode(searchedNode, searchedNode -> left);
+        }
+        else if(searchedNode -> left == nullptr) {
+            deleteNode(searchedNode, searchedNode -> right);
+        }
+        else {
+            TreeNode<T>* smallestNode = getSmallestNode(searchedNode -> right);
+            searchedNode -> value = smallestNode -> value;
+            deleteNode(smallestNode, nullptr);
+        }
+    }
+    else throw runtime_error("Given value does not exist in tree");
+}
+
+template <typename T> TreeNode<T>* BST<T>::getLargest() {
+    return getLargestNode(root);
+}
+
+template <typename T> TreeNode<T>* BST<T>::getSmallest() {
+    return getSmallestNode(root);
+}
+
 int main() {
     BST<int> myTree;
     myTree.insert(10);
@@ -156,14 +228,14 @@ int main() {
     myTree.insert(3); 
     myTree.insert(5); 
     myTree.insert(11);
+    myTree.insert(19);
+    myTree.insert(16);
+    myTree.remove(5);
+    myTree.remove(1);
+    myTree.remove(15);
     myTree.printPreOrder();
     myTree.printInOrder();
     myTree.printPostOrder();
-    TreeNode<int>* searchedNode = myTree.search(1);
-    if(searchedNode != nullptr) {
-        cout << "found" << "\n";
-    }
-    else cout << "not found";
     return 0;
 }
 
